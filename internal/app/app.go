@@ -2,6 +2,7 @@
 package app
 
 import (
+	"database/sql"
 	"fmt"
 	"log"
 	"net/http"
@@ -13,6 +14,7 @@ import (
 
 type Application struct {
 	Logger *log.Logger
+	DB     *sql.DB
 }
 
 func NewApplication() (*Application, error) {
@@ -30,6 +32,7 @@ func NewApplication() (*Application, error) {
 
 	app := &Application{
 		Logger: logger,
+		DB:     pgDB,
 	}
 
 	return app, nil

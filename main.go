@@ -20,6 +20,12 @@ func main() {
 		panic(err)
 	}
 
+	defer func() {
+		if err := app.DB.Close(); err != nil {
+			app.Logger.Printf("error closing the database connection: %v", err)
+		}
+	}()
+
 	r := routes.SetupRoutes(app)
 	server := &http.Server{
 		Addr:         fmt.Sprintf(":%d", port),
