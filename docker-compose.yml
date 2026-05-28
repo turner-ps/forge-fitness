@@ -1,0 +1,36 @@
+services:
+  db:
+    container_name: "workoutDB"
+    image: postgres:18.3-alpine
+    volumes:
+      - "./database/postgres-data:/var/lib/postgresql:rw"
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_DB: "postgres"
+      POSTGRES_USER: "postgres"
+      POSTGRES_PASSWORD: "postgres"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d postgres"]
+      interval: 1s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  test_db:
+    container_name: "workoutDB_test"
+    image: postgres:18.3-alpine
+    volumes:
+      - "./database/postgres-test-data:/var/lib/postgresql:rw"
+    ports:
+      - "5433:5432"
+    environment:
+      POSTGRES_DB: "postgres"
+      POSTGRES_USER: "postgres"
+      POSTGRES_PASSWORD: "postgres"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d postgres"]
+      interval: 1s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
