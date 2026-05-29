@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"io/fs"
 	"os"
-	"time"
 
 	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/pressly/goose/v3"
@@ -25,28 +24,8 @@ func Open() (*sql.DB, error) {
 		return nil, fmt.Errorf("db:open %w", err)
 	}
 
-	if err := pingWithRetry(db); err != nil {
-		db.Close()
-		return nil, fmt.Errorf("db:open %w", err)
-	}
-
 	fmt.Println("connected to database")
 	return db, nil
-}
-
-func pingWithRetry(db *sql.DB) error {
-	var err error
-
-	for attempt := 1; attempt <= 10; attempt++ {
-		err = db.Ping()
-		if err == nil {
-			return nil
-		}
-
-		time.Sleep(500 * time.Millisecond)
-	}
-
-	return err
 }
 
 func MigrateFS(db *sql.DB, migrationFS fs.FS, dir string) error {
