@@ -3,6 +3,7 @@ package utils
 
 import (
 	"encoding/json"
+	"log"
 	"net/http"
 )
 
@@ -11,7 +12,7 @@ type Envelope map[string]any
 func WriteJSON(w http.ResponseWriter, status int, data Envelope) error {
 	js, err := json.MarshalIndent(data, "", "")
 	if err != nil {
-		return err
+		log.Fatalf("error marshaling: %s", err)
 	}
 
 	js = append(js, '\n')

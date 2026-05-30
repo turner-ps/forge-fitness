@@ -3,13 +3,13 @@ package app
 
 import (
 	"database/sql"
-	"fmt"
 	"log"
 	"net/http"
 	"os"
 
 	"github.com/turner-ps/forge-fitness/internal/store"
 	"github.com/turner-ps/forge-fitness/migrations"
+	"github.com/turner-ps/forge-fitness/utils"
 )
 
 type Application struct {
@@ -39,7 +39,7 @@ func NewApplication() (*Application, error) {
 }
 
 func (a *Application) Heartbeat(w http.ResponseWriter, r *http.Request) {
-	_, err := fmt.Fprint(w, "Status is available\n")
+	err := utils.WriteJSON(w, http.StatusOK, utils.Envelope{"success": "status is available"})
 	if err != nil {
 		panic(err)
 	}
