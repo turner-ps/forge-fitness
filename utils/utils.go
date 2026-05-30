@@ -6,7 +6,7 @@ import (
 	"net/http"
 )
 
-type Envelope map[string]interface{}
+type Envelope map[string]any
 
 func WriteJSON(w http.ResponseWriter, status int, data Envelope) error {
 	js, err := json.MarshalIndent(data, "", "")
