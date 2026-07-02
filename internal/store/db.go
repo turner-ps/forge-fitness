@@ -8,12 +8,17 @@ import (
 	"os"
 
 	_ "github.com/jackc/pgx/v5/stdlib"
+	"github.com/joho/godotenv"
 	"github.com/pressly/goose/v3"
 )
 
-const defaultDSN = "host=localhost user=postgres password=postgres dbname=postgres port=5432 sslmode=disable"
-
 func Open() (*sql.DB, error) {
+	err := godotenv.Load()
+	if err != nil {
+		return nil, fmt.Errorf("env:load %w", err)
+	}
+
+	defaultDSN := os.Getenv("DEFAULT_DSN")
 	dsn := os.Getenv("DATABASE_URL")
 	if dsn == "" {
 		dsn = defaultDSN
