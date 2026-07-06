@@ -44,3 +44,10 @@ func (a *Application) Heartbeat(w http.ResponseWriter, r *http.Request) {
 		panic(err)
 	}
 }
+
+func (a *Application) GetWorkout(w http.ResponseWriter, r *http.Request) {
+	err := utils.WriteJSON(w, http.StatusOK, utils.Envelope{"success": "here is your workout: "})
+	if err != nil {
+		panic(err)
+	}
+}

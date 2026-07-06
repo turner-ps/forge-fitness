@@ -10,6 +10,7 @@ func SetupRoutes(app *app.Application) *chi.Mux {
 	r := chi.NewRouter()
 
 	r.Get("/heartbeat", app.Heartbeat)
+	r.Get("/workout", app.GetWorkout)
 
 	return r
 }
