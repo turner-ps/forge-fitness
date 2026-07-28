@@ -4,12 +4,10 @@ package app
 import (
 	"database/sql"
 	"log"
-	"net/http"
 	"os"
 
 	"github.com/turner-ps/forge-fitness/internal/store"
 	"github.com/turner-ps/forge-fitness/migrations"
-	"github.com/turner-ps/forge-fitness/utils"
 )
 
 type Application struct {
@@ -36,18 +34,4 @@ func NewApplication() (*Application, error) {
 	}
 
 	return app, nil
-}
-
-func (a *Application) Heartbeat(w http.ResponseWriter, r *http.Request) {
-	err := utils.WriteJSON(w, http.StatusOK, utils.Envelope{"success": "status is available"})
-	if err != nil {
-		panic(err)
-	}
-}
-
-func (a *Application) GetWorkout(w http.ResponseWriter, r *http.Request) {
-	err := utils.WriteJSON(w, http.StatusOK, utils.Envelope{"success": "here is your workout: "})
-	if err != nil {
-		panic(err)
-	}
 }
