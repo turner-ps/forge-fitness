@@ -2,7 +2,6 @@ package store
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
 	"time"
 )
@@ -14,13 +13,13 @@ type Workout struct {
 	UpdatedAt time.Time `json:"updated_at"`
 }
 
-func GetWorkouts(ctx context.Context, db *sql.DB) ([]Workout, error) {
+func (s *Store) GetWorkouts(ctx context.Context) ([]Workout, error) {
 	const query = `
 SELECT id, name, created_at, updated_at
 FROM workout
 ORDER BY id`
 
-	rows, err := db.QueryContext(ctx, query)
+	rows, err := s.DB.QueryContext(ctx, query)
 	if err != nil {
 		return nil, fmt.Errorf("get workouts: %w", err)
 	}
@@ -49,14 +48,14 @@ ORDER BY id`
 	return workouts, nil
 }
 
-func GetWorkoutByID(ctx context.Context, db *sql.DB, id int64) (*Workout, error) {
+func (s *Store) GetWorkoutByID(ctx context.Context, id int64) (*Workout, error) {
 	const query = `
 SELECT id, name, created_at, updated_at
 FROM workout
 WHERE id = $1`
 
 	var workout Workout
-	err := db.QueryRowContext(ctx, query, id).Scan(
+	err := s.DB.QueryRowContext(ctx, query, id).Scan(
 		&workout.ID,
 		&workout.Name,
 		&workout.CreatedAt,

@@ -12,6 +12,14 @@ import (
 	"github.com/pressly/goose/v3"
 )
 
+type Store struct {
+	DB *sql.DB
+}
+
+func (s *Store) Close() error {
+	return s.DB.Close()
+}
+
 func Open() (*sql.DB, error) {
 	err := godotenv.Load()
 	if err != nil {

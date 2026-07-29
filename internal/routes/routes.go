@@ -9,14 +9,9 @@ import (
 func SetupRoutes(app *app.Application) *chi.Mux {
 	r := chi.NewRouter()
 
-	r.Get("/heartbeat", app.Heartbeat)
-
-	// Workouts
-	r.Get("/workout", app.GetWorkouts)
-	r.Get("/workout/{id}", app.GetWorkout)
-
-	// Exercises
-	r.Get("/exercise/{id}", app.GetExerciseByID)
+	RegisterHealthRoutes(r, app)
+	RegisterWorkoutsRoutes(r, app)
+	registerExercisesRoutes(r, app)
 
 	return r
 }

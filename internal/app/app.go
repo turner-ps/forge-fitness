@@ -2,7 +2,6 @@
 package app
 
 import (
-	"database/sql"
 	"log"
 	"os"
 
@@ -12,7 +11,7 @@ import (
 
 type Application struct {
 	Logger *log.Logger
-	DB     *sql.DB
+	Store  *store.Store
 }
 
 func NewApplication() (*Application, error) {
@@ -28,10 +27,16 @@ func NewApplication() (*Application, error) {
 
 	logger := log.New(os.Stdout, "", log.Ldate|log.Ltime)
 
+	dataStore := &store.Store{DB: pgDB}
+
 	app := &Application{
 		Logger: logger,
-		DB:     pgDB,
+		Store:  dataStore,
 	}
 
 	return app, nil
+}
+
+func (a *Application) Close() error {
+	return a.Store.Close()
 }

@@ -7,8 +7,7 @@ import (
 	"strconv"
 
 	"github.com/go-chi/chi/v5"
-	"github.com/turner-ps/forge-fitness/internal/store"
-	"github.com/turner-ps/forge-fitness/utils"
+	"github.com/turner-ps/forge-fitness/internal/httpjson"
 )
 
 func (a *Application) GetExerciseByID(w http.ResponseWriter, r *http.Request) {
@@ -18,7 +17,7 @@ func (a *Application) GetExerciseByID(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	exercise, err := store.GetExerciseByID(r.Context(), a.DB, id)
+	exercise, err := a.Store.GetExerciseByID(r.Context(), id)
 	if errors.Is(err, sql.ErrNoRows) {
 		a.notFound(w, "exercise not found")
 		return
@@ -28,7 +27,7 @@ func (a *Application) GetExerciseByID(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = utils.WriteJSON(w, http.StatusOK, utils.Envelope{"exercise": exercise})
+	err = httpjson.WriteJSON(w, http.StatusOK, httpjson.Envelope{"exercise": exercise})
 	if err != nil {
 		a.Logger.Printf("write exercise response: %v", err)
 	}

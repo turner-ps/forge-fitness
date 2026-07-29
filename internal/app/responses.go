@@ -3,7 +3,7 @@ package app
 import (
 	"net/http"
 
-	"github.com/turner-ps/forge-fitness/utils"
+	"github.com/turner-ps/forge-fitness/internal/httpjson"
 )
 
 func (a *Application) badRequest(w http.ResponseWriter, message string) {
@@ -20,7 +20,7 @@ func (a *Application) serverError(w http.ResponseWriter, err error) {
 }
 
 func (a *Application) errorResponse(w http.ResponseWriter, status int, message string) {
-	err := utils.WriteJSON(w, status, utils.Envelope{"error": message})
+	err := httpjson.WriteJSON(w, status, httpjson.Envelope{"error": message})
 	if err != nil {
 		a.Logger.Printf("write error response: %v", err)
 	}

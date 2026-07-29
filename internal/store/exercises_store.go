@@ -3,7 +3,6 @@ package store
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
 	"time"
 
@@ -26,7 +25,7 @@ type Exercise struct {
 	UpdatedAt            time.Time `json:"updated_at"`
 }
 
-func GetExerciseByID(ctx context.Context, db *sql.DB, id int64) (*Exercise, error) {
+func (s *Store) GetExerciseByID(ctx context.Context, id int64) (*Exercise, error) {
 	const query = `
 SELECT
   id,
@@ -47,7 +46,7 @@ WHERE id = $1`
 
 	pgTypes := pgtype.NewMap()
 	var exercise Exercise
-	err := db.QueryRowContext(ctx, query, id).Scan(
+	err := s.DB.QueryRowContext(ctx, query, id).Scan(
 		&exercise.ID,
 		&exercise.Name,
 		&exercise.Level,
