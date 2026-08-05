@@ -24,6 +24,7 @@ type WorkoutExercise struct {
 	ID              int64     `json:"id"`
 	WorkoutID       int64     `json:"workout_id"`
 	ExerciseID      int64     `json:"exercise_id"`
+	ExerciseName    string    `json:"exercise_name"`
 	Position        int       `json:"position"`
 	Sets            *int      `json:"sets"`
 	Reps            *int      `json:"reps"`
@@ -46,6 +47,10 @@ type AddExerciseToWorkoutInput struct {
 
 type workoutScanner interface {
 	Scan(dest ...any) error
+}
+
+type workoutExecer interface {
+	QueryRowContext(ctx context.Context, query string, args ...any) *sql.Row
 }
 
 func (s *Store) GetWorkouts(ctx context.Context) ([]Workout, error) {
@@ -152,6 +157,41 @@ RETURNING id, user_id, name, created_at, updated_at`
 }
 
 func (s *Store) AddExerciseToWorkout(ctx context.Context, input AddExerciseToWorkoutInput) (*WorkoutExercise, error) {
+	workoutExercise, err := addExerciseToWorkout(ctx, s.DB, input)
+	if err != nil {
+		return nil, fmt.Errorf("add exercise id %d to workout id %d for user id %d: %w", input.ExerciseID, input.WorkoutID, input.UserID, err)
+	}
+
+	return workoutExercise, nil
+}
+
+func (s *Store) AddExercisesToWorkout(ctx context.Context, inputs []AddExerciseToWorkoutInput) ([]WorkoutExercise, error) {
+	tx, err := s.DB.BeginTx(ctx, nil)
+	if err != nil {
+		return nil, fmt.Errorf("begin add exercises to workout: %w", err)
+	}
+	defer func() {
+		_ = tx.Rollback()
+	}()
+
+	workoutExercises := make([]WorkoutExercise, 0, len(inputs))
+	for _, input := range inputs {
+		workoutExercise, err := addExerciseToWorkout(ctx, tx, input)
+		if err != nil {
+			return nil, fmt.Errorf("add exercise id %d to workout id %d for user id %d: %w", input.ExerciseID, input.WorkoutID, input.UserID, err)
+		}
+
+		workoutExercises = append(workoutExercises, *workoutExercise)
+	}
+
+	if err := tx.Commit(); err != nil {
+		return nil, fmt.Errorf("commit add exercises to workout: %w", err)
+	}
+
+	return workoutExercises, nil
+}
+
+func addExerciseToWorkout(ctx context.Context, db workoutExecer, input AddExerciseToWorkoutInput) (*WorkoutExercise, error) {
 	const query = `
 INSERT INTO workout_exercise (
   workout_id,
@@ -176,6 +216,7 @@ RETURNING
   id,
   workout_id,
   exercise_id,
+  (SELECT e.name FROM exercise e WHERE e.id = workout_exercise.exercise_id),
   position,
   sets,
   reps,
@@ -184,7 +225,7 @@ RETURNING
   created_at,
   updated_at`
 
-	workoutExercise, err := scanWorkoutExercise(s.DB.QueryRowContext(
+	return scanWorkoutExercise(db.QueryRowContext(
 		ctx,
 		query,
 		input.WorkoutID,
@@ -196,29 +237,26 @@ RETURNING
 		nullableFloat(input.Weight),
 		nullableInt(input.DurationSeconds),
 	))
-	if err != nil {
-		return nil, fmt.Errorf("add exercise id %d to workout id %d for user id %d: %w", input.ExerciseID, input.WorkoutID, input.UserID, err)
-	}
-
-	return workoutExercise, nil
 }
 
 func (s *Store) GetWorkoutExercises(ctx context.Context, workoutID int64) ([]WorkoutExercise, error) {
 	const query = `
 SELECT
-  id,
-  workout_id,
-  exercise_id,
-  position,
-  sets,
-  reps,
-  weight,
-  duration_seconds,
-  created_at,
-  updated_at
-FROM workout_exercise
-WHERE workout_id = $1
-ORDER BY position, id`
+  we.id,
+  we.workout_id,
+  we.exercise_id,
+  e.name,
+  we.position,
+  we.sets,
+  we.reps,
+  we.weight,
+  we.duration_seconds,
+  we.created_at,
+  we.updated_at
+FROM workout_exercise we
+INNER JOIN exercise e ON e.id = we.exercise_id
+WHERE we.workout_id = $1
+ORDER BY we.position, we.id`
 
 	rows, err := s.DB.QueryContext(ctx, query, workoutID)
 	if err != nil {
@@ -250,6 +288,7 @@ SELECT
   we.id,
   we.workout_id,
   we.exercise_id,
+  e.name,
   we.position,
   we.sets,
   we.reps,
@@ -259,6 +298,7 @@ SELECT
   we.updated_at
 FROM workout_exercise we
 INNER JOIN workout w ON w.id = we.workout_id
+INNER JOIN exercise e ON e.id = we.exercise_id
 WHERE w.user_id = $1 AND we.workout_id = $2
 ORDER BY we.position, we.id`
 
@@ -313,6 +353,7 @@ func scanWorkoutExercise(row workoutScanner) (*WorkoutExercise, error) {
 		&workoutExercise.ID,
 		&workoutExercise.WorkoutID,
 		&workoutExercise.ExerciseID,
+		&workoutExercise.ExerciseName,
 		&workoutExercise.Position,
 		&sets,
 		&reps,
