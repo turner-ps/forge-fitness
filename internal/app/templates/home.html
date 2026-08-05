@@ -1,0 +1,51 @@
+{{define "home-page"}}{{template "shell-start" .}}{{template "home-content"
+.}}{{template "shell-end" .}}{{end}} {{define "home-content"}}
+<section class="hero">
+  <div class="panel">
+    <div class="eyebrow">Forge Fitness</div>
+    <h1>Simple workout tracking.</h1>
+    <p>
+      Browse workouts and search the exercise catalog with fast server-rendered
+      pages.
+    </p>
+    <div class="chips">
+      <a class="button primary" href="/ui/exercises">Search exercises</a>
+      <a class="button" href="/ui/workouts">Open workouts</a>
+    </div>
+  </div>
+  <aside class="stack">
+    <div class="stats">
+      <div class="stat">
+        <span class="meta">Workouts</span>
+        <strong>{{len .Workouts}}</strong>
+      </div>
+
+      <div class="stat">
+        <span class="meta">Exercise preview</span>
+        <strong>{{len .Exercises}}</strong>
+      </div>
+    </div>
+    <div class="card">
+      <div>
+        <div class="eyebrow">Frontend</div>
+        <h3>HTMX powered</h3>
+      </div>
+      <p>
+        Pages stay small, accessible, and usable without a client app shell.
+      </p>
+    </div>
+  </aside>
+</section>
+
+<section class="toolbar">
+  <h2>Exercise Preview</h2>
+  <a class="button" href="/ui/exercises">View all</a>
+</section>
+
+{{if .Exercises}}
+<section class="grid">
+  {{range .Exercises}} {{template "exercise-card" .}} {{end}}
+</section>
+{{else}}
+<div class="empty">No exercises loaded yet.</div>
+{{end}} {{end}}

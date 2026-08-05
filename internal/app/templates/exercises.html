@@ -1,0 +1,101 @@
+{{define "exercises-page"}}{{template "shell-start" .}}{{template
+"exercises-content" .}}{{template "shell-end" .}}{{end}} {{define
+"exercises-content"}}
+<section class="panel">
+  <div class="eyebrow">Exercises</div>
+  <h1>Find movements fast.</h1>
+  <p>Search by name, category, equipment, or primary muscle group.</p>
+</section>
+
+<section class="toolbar">
+  <form class="search" action="/ui/exercises" method="get">
+    <input
+      id="exercise-search"
+      type="search"
+      name="q"
+      value="{{.Search}}"
+      placeholder="Try chest, dumbbell, cardio..."
+      hx-get="/ui/exercises/results"
+      hx-trigger="keyup changed delay:250ms, search"
+      hx-target="#exercise-results"
+      hx-indicator="#exercise-loading"
+      hx-push-url="false"
+    />
+    <button type="submit">Search</button>
+  </form>
+  <span id="exercise-loading" class="htmx-indicator meta">Searching...</span>
+</section>
+
+<section id="exercise-results">{{template "exercise-results" .}}</section>
+{{end}} {{define "exercise-results"}} {{if .Search}}
+<div class="toolbar">
+  <h2>Matches for {{.Search}}</h2>
+  <a class="button" href="/exercises/?q={{.Search}}&limit=24">JSON route</a>
+</div>
+{{else}}
+<div class="toolbar">
+  <h2>First {{len .Exercises}} Exercises</h2>
+  <a class="button" href="/exercises/?limit=24">JSON route</a>
+</div>
+{{end}} {{if .Exercises}}
+<div class="grid">
+  {{range .Exercises}} {{template "exercise-card" .}} {{end}}
+</div>
+{{else}}
+<div class="empty">No matching exercises.</div>
+{{end}} {{end}} {{define "exercise-card"}}
+<a class="card" href="/ui/exercises/{{.ID}}">
+  <div>
+    <div class="meta">Exercise #{{.ID}}</div>
+    <h3>{{.Name}}</h3>
+  </div>
+  <div class="chips">
+    {{if .Category}}<span class="chip">{{.Category}}</span>{{end}} {{if
+    .Equipment}}<span class="chip">{{.Equipment}}</span>{{end}} {{range
+    .PrimaryMuscleGroup}}<span class="chip">{{.}}</span>{{end}}
+  </div>
+</a>
+{{end}} {{define "exercise-page"}}{{template "shell-start" .}}{{template
+"exercise-content" .}}{{template "shell-end" .}}{{end}} {{define
+"exercise-content"}}
+<a class="back" href="/ui/exercises">Back to all exercises</a>
+<article class="detail">
+  <div class="eyebrow">Exercise #{{.Exercise.ID}}</div>
+  <h1>{{.Exercise.Name}}</h1>
+  <div class="chips">
+    {{if .Exercise.Level}}<span class="chip">{{.Exercise.Level}}</span>{{end}}
+    {{if .Exercise.Category}}<span class="chip">{{.Exercise.Category}}</span
+    >{{end}} {{if .Exercise.Equipment}}<span class="chip"
+      >{{.Exercise.Equipment}}</span
+    >{{end}} {{if .Exercise.Mechanic}}<span class="chip"
+      >{{.Exercise.Mechanic}}</span
+    >{{end}} {{if .Exercise.Force}}<span class="chip">{{.Exercise.Force}}</span
+    >{{end}}
+    <a class="chip" href="/exercises/{{.Exercise.ID}}">JSON</a>
+  </div>
+
+  <section class="toolbar">
+    <h2>Muscles</h2>
+  </section>
+  <div class="chips">
+    {{range .Exercise.PrimaryMuscleGroup}}<span class="chip"
+      >primary: {{.}}</span
+    >{{end}} {{range .Exercise.SecondaryMuscleGroup}}<span class="chip"
+      >secondary: {{.}}</span
+    >{{end}}
+  </div>
+
+  <section class="toolbar">
+    <h2>Instructions</h2>
+  </section>
+  {{if .Exercise.Instructions}}
+  <ol class="instructions">
+    {{range .Exercise.Instructions}}
+    <li>{{.}}</li>
+    {{end}}
+  </ol>
+  {{else}}
+  <div class="empty">No instructions stored for this movement.</div>
+  {{end}}
+</article>
+{{end}}

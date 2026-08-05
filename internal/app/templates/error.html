@@ -1,0 +1,12 @@
+{{define "error-page"}}{{template "shell-start" .}}{{template "error-content"
+.}}{{template "shell-end" .}}{{end}} {{define "error-content"}}
+<section class="panel">
+  <div class="eyebrow">Error</div>
+  <h1>{{.Error}}</h1>
+  <p>Request could not be completed.</p>
+  <div class="chips">
+    <a class="button primary" href="/ui/">Dashboard</a>
+    <a class="button" href="/heartbeat">Health check</a>
+  </div>
+</section>
+{{end}}

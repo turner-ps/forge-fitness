@@ -8,6 +8,7 @@ import (
 
 func registerExercisesRoutes(r chi.Router, app *app.Application) {
 	r.Route("/exercises", func(r chi.Router) {
+		r.Get("/", app.GetExercises)
 		r.Get("/{id}", app.GetExerciseByID)
 	})
 }
