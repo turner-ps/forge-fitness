@@ -11,7 +11,6 @@ func SetupRoutes(app *app.Application) *chi.Mux {
 
 	registerFrontendRoutes(r, app)
 	RegisterHealthRoutes(r, app)
-
 	RegisterWorkoutsRoutes(r, app)
 	registerExercisesRoutes(r, app)
 
