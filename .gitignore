@@ -2,3 +2,4 @@
 ./database/
 exercise_data/
 .env
+.opencode
