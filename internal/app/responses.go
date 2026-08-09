@@ -25,3 +25,7 @@ func (a *Application) errorResponse(w http.ResponseWriter, status int, message s
 		a.Logger.Printf("write error response: %v", err)
 	}
 }
+
+func (a *Application) unauthorized(w http.ResponseWriter) {
+	a.errorResponse(w, http.StatusUnauthorized, "unauthorized")
+}
