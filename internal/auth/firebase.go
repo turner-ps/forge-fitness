@@ -14,6 +14,7 @@ import (
 )
 
 const (
+	ProviderFirebase           = "firebase"
 	authEnabledEnv             = "AUTH_ENABLED"
 	firebaseProjectIDEnv       = "FIREBASE_PROJECT_ID"
 	firebaseCredentialsFileEnv = "FIREBASE_CREDENTIALS_FILE"
@@ -24,15 +25,16 @@ type FirebaseConfig struct {
 	CredentialsFile string
 }
 
-type VerifiedToken struct {
-	UID           string
+type Identity struct {
+	Provider      string
+	Subject       string
 	Email         string
 	Name          string
 	EmailVerified bool
 }
 
 type TokenVerifier interface {
-	VerifyIDToken(ctx context.Context, token string) (*VerifiedToken, error)
+	VerifyIDToken(ctx context.Context, token string) (*Identity, error)
 }
 
 type FirebaseVerifier struct {
@@ -95,18 +97,19 @@ func NewFirebaseVerifier(ctx context.Context, config FirebaseConfig) (*FirebaseV
 	return &FirebaseVerifier{client: client}, nil
 }
 
-func (v *FirebaseVerifier) VerifyIDToken(ctx context.Context, token string) (*VerifiedToken, error) {
+func (v *FirebaseVerifier) VerifyIDToken(ctx context.Context, token string) (*Identity, error) {
 	verifiedToken, err := v.client.VerifyIDToken(ctx, token)
 	if err != nil {
 		return nil, fmt.Errorf("firebase:verify id token %w", err)
 	}
 
-	return verifiedTokenFromFirebase(verifiedToken), nil
+	return identityFromFirebaseToken(verifiedToken), nil
 }
 
-func verifiedTokenFromFirebase(token *firebaseauth.Token) *VerifiedToken {
-	return &VerifiedToken{
-		UID:           token.UID,
+func identityFromFirebaseToken(token *firebaseauth.Token) *Identity {
+	return &Identity{
+		Provider:      ProviderFirebase,
+		Subject:       token.UID,
 		Email:         stringClaim(token.Claims, "email"),
 		Name:          stringClaim(token.Claims, "name"),
 		EmailVerified: boolClaim(token.Claims, "email_verified"),
