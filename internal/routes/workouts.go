@@ -6,7 +6,7 @@ import (
 	"github.com/turner-ps/forge-fitness/internal/app"
 )
 
-func RegisterWorkoutsRoutes(r chi.Router, app *app.Application) {
+func registerWorkoutsRoutes(r chi.Router, app *app.Application) {
 	r.Route("/users/{userID}", func(r chi.Router) {
 		r.Get("/workout-sessions", app.GetUserWorkoutSessions)
 		r.Get("/workout-sessions/{sessionID}", app.GetWorkoutSessionByID)

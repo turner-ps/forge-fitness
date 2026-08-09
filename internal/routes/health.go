@@ -6,6 +6,6 @@ import (
 	"github.com/turner-ps/forge-fitness/internal/app"
 )
 
-func RegisterHealthRoutes(r chi.Router, app *app.Application) {
+func registerHealthRoutes(r chi.Router, app *app.Application) {
 	r.Get("/heartbeat", app.Heartbeat)
 }

@@ -10,8 +10,9 @@ func SetupRoutes(app *app.Application) *chi.Mux {
 	r := chi.NewRouter()
 
 	registerFrontendRoutes(r, app)
-	RegisterHealthRoutes(r, app)
-	RegisterWorkoutsRoutes(r, app)
+	registerMeRoutes(r, app)
+	registerHealthRoutes(r, app)
+	registerWorkoutsRoutes(r, app)
 	registerExercisesRoutes(r, app)
 
 	return r
