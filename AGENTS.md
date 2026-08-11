@@ -43,8 +43,10 @@ Current frontend supports (Update this section as new features are implemented):
 - HTMX dashboard under `/ui/`.
 - Exercise browsing/search/details.
 - Workout browsing/details.
+- Firebase email/password and Google login/logout under `/ui/login`.
+- Bearer-token HTMX authentication with Firebase-managed browser persistence.
 - Light/dark theme toggle with `localStorage` and system preference fallback.
-- Frontend does not yet support users, workout creation, exercise logging, or sessions.
+- Frontend does not yet support workout creation, exercise logging, or session views.
 
 # Repo layout
 

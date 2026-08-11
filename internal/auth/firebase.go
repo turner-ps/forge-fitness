@@ -18,11 +18,21 @@ const (
 	authEnabledEnv             = "AUTH_ENABLED"
 	firebaseProjectIDEnv       = "FIREBASE_PROJECT_ID"
 	firebaseCredentialsFileEnv = "FIREBASE_CREDENTIALS_FILE"
+	firebaseWebAPIKeyEnv       = "FIREBASE_WEB_API_KEY"
+	firebaseWebAuthDomainEnv   = "FIREBASE_WEB_AUTH_DOMAIN"
+	firebaseWebAppIDEnv        = "FIREBASE_WEB_APP_ID"
 )
 
 type FirebaseConfig struct {
 	ProjectID       string
 	CredentialsFile string
+}
+
+type FirebaseWebConfig struct {
+	APIKey     string `json:"apiKey"`
+	AuthDomain string `json:"authDomain"`
+	ProjectID  string `json:"projectId"`
+	AppID      string `json:"appId"`
 }
 
 type Identity struct {
@@ -67,6 +77,32 @@ func FirebaseConfigFromEnv() (FirebaseConfig, error) {
 
 	if config.CredentialsFile == "" {
 		return FirebaseConfig{}, fmt.Errorf("%s is required", firebaseCredentialsFileEnv)
+	}
+
+	return config, nil
+}
+
+func FirebaseWebConfigFromEnv() (FirebaseWebConfig, error) {
+	config := FirebaseWebConfig{
+		APIKey:     strings.TrimSpace(os.Getenv(firebaseWebAPIKeyEnv)),
+		AuthDomain: strings.TrimSpace(os.Getenv(firebaseWebAuthDomainEnv)),
+		ProjectID:  strings.TrimSpace(os.Getenv(firebaseProjectIDEnv)),
+		AppID:      strings.TrimSpace(os.Getenv(firebaseWebAppIDEnv)),
+	}
+
+	required := []struct {
+		name  string
+		value string
+	}{
+		{firebaseWebAPIKeyEnv, config.APIKey},
+		{firebaseWebAuthDomainEnv, config.AuthDomain},
+		{firebaseProjectIDEnv, config.ProjectID},
+		{firebaseWebAppIDEnv, config.AppID},
+	}
+	for _, field := range required {
+		if field.value == "" {
+			return FirebaseWebConfig{}, fmt.Errorf("%s is required", field.name)
+		}
 	}
 
 	return config, nil

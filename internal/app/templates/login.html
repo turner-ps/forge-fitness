@@ -1,0 +1,39 @@
+{{define "login-page"}}{{template "shell-start" .}}{{template "login-content"
+.}}{{template "shell-end" .}}{{end}} {{define "login-content"}}
+<section class="auth-layout">
+  <div class="panel auth-intro">
+    <div class="eyebrow">Member access</div>
+    <h1>Train. Log. Repeat.</h1>
+    <p>
+      Sign in to keep workouts and training history tied to your account.
+    </p>
+    <div class="chips">
+      <span class="chip">Firebase secured</span>
+      <span class="chip">Web + mobile ready</span>
+    </div>
+  </div>
+
+  <div class="detail auth-card">
+    <div>
+      <div class="eyebrow">Forge Fitness</div>
+      <h2>Sign in</h2>
+    </div>
+
+    <form class="auth-form" data-auth-login-form>
+      <label>
+        <span>Email</span>
+        <input type="email" name="email" autocomplete="email" required>
+      </label>
+      <label>
+        <span>Password</span>
+        <input type="password" name="password" autocomplete="current-password" required>
+      </label>
+      <button class="button primary" type="submit" data-auth-email-submit>Sign in</button>
+    </form>
+
+    <div class="auth-divider"><span>or</span></div>
+    <button class="button auth-google" type="button" data-auth-google>Continue with Google</button>
+    <p class="auth-error" data-auth-error role="alert" hidden></p>
+  </div>
+</section>
+{{end}}

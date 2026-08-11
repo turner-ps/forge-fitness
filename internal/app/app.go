@@ -13,9 +13,10 @@ import (
 )
 
 type Application struct {
-	Logger        *log.Logger
-	Store         *store.Store
-	TokenVerifier auth.TokenVerifier
+	Logger            *log.Logger
+	Store             *store.Store
+	TokenVerifier     auth.TokenVerifier
+	FirebaseWebConfig auth.FirebaseWebConfig
 }
 
 func NewApplication() (*Application, error) {
@@ -40,6 +41,7 @@ func NewApplication() (*Application, error) {
 	dataStore := &store.Store{DB: pgDB}
 
 	var tokenVerifier auth.TokenVerifier
+	var firebaseWebConfig auth.FirebaseWebConfig
 	authEnabled, err := auth.EnabledFromEnv()
 	if err != nil {
 		return nil, fmt.Errorf("auth:config %w", err)
@@ -50,12 +52,18 @@ func NewApplication() (*Application, error) {
 		if err != nil {
 			return nil, fmt.Errorf("auth:init firebase %w", err)
 		}
+
+		firebaseWebConfig, err = auth.FirebaseWebConfigFromEnv()
+		if err != nil {
+			return nil, fmt.Errorf("auth:web config %w", err)
+		}
 	}
 
 	app := &Application{
-		Logger:        logger,
-		Store:         dataStore,
-		TokenVerifier: tokenVerifier,
+		Logger:            logger,
+		Store:             dataStore,
+		TokenVerifier:     tokenVerifier,
+		FirebaseWebConfig: firebaseWebConfig,
 	}
 
 	return app, nil

@@ -21,6 +21,7 @@ var frontendTemplates = template.Must(template.ParseFS(frontendTemplateFS, "temp
 type frontendData struct {
 	Title     string
 	Active    string
+	AuthPath  string
 	Search    string
 	Workouts  []store.Workout
 	Workout   *store.Workout
@@ -30,7 +31,25 @@ type frontendData struct {
 }
 
 func (a *Application) FrontendHome(w http.ResponseWriter, r *http.Request) {
-	workouts, err := a.Store.GetWorkouts(r.Context())
+	if r.Header.Get("HX-Request") != "true" {
+		a.renderFrontend(w, r, "home-page", "home-content", frontendData{
+			Title:    "Forge Fitness",
+			Active:   "home",
+			AuthPath: "/ui/",
+		})
+		return
+	}
+
+	a.RequireAuth(http.HandlerFunc(a.frontendHome)).ServeHTTP(w, r)
+}
+
+func (a *Application) frontendHome(w http.ResponseWriter, r *http.Request) {
+	userID, ok := a.authenticatedUserID(w, r)
+	if !ok {
+		return
+	}
+
+	workouts, err := a.Store.GetWorkoutsByUserID(r.Context(), userID)
 	if err != nil {
 		a.frontendServerError(w, r, err)
 		return
@@ -51,7 +70,25 @@ func (a *Application) FrontendHome(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *Application) FrontendWorkouts(w http.ResponseWriter, r *http.Request) {
-	workouts, err := a.Store.GetWorkouts(r.Context())
+	if r.Header.Get("HX-Request") != "true" {
+		a.renderFrontend(w, r, "workouts-page", "workouts-content", frontendData{
+			Title:    "Workouts",
+			Active:   "workouts",
+			AuthPath: r.URL.Path,
+		})
+		return
+	}
+
+	a.RequireAuth(http.HandlerFunc(a.frontendWorkouts)).ServeHTTP(w, r)
+}
+
+func (a *Application) frontendWorkouts(w http.ResponseWriter, r *http.Request) {
+	userID, ok := a.authenticatedUserID(w, r)
+	if !ok {
+		return
+	}
+
+	workouts, err := a.Store.GetWorkoutsByUserID(r.Context(), userID)
 	if err != nil {
 		a.frontendServerError(w, r, err)
 		return
@@ -71,7 +108,27 @@ func (a *Application) FrontendWorkoutByID(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	workout, err := a.Store.GetWorkoutByID(r.Context(), id)
+	if r.Header.Get("HX-Request") != "true" {
+		a.renderFrontend(w, r, "workout-page", "workout-content", frontendData{
+			Title:    "Workout | Forge Fitness",
+			Active:   "workouts",
+			AuthPath: r.URL.Path,
+		})
+		return
+	}
+
+	a.RequireAuth(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		a.frontendWorkoutByID(w, r, id)
+	})).ServeHTTP(w, r)
+}
+
+func (a *Application) frontendWorkoutByID(w http.ResponseWriter, r *http.Request, id int64) {
+	userID, ok := a.authenticatedUserID(w, r)
+	if !ok {
+		return
+	}
+
+	workout, err := a.Store.GetWorkoutByIDForUser(r.Context(), userID, id)
 	if errors.Is(err, sql.ErrNoRows) {
 		a.frontendError(w, r, http.StatusNotFound, "workout not found")
 		return

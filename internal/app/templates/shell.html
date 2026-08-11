@@ -15,6 +15,83 @@
       } catch (_) {}
     })();
   </script>
+  <script>
+    window.forgeAuth = (() => {
+      let resolveInitialized;
+      const initialized = new Promise((resolve) => {
+        resolveInitialized = resolve;
+      });
+      const state = { initialized, ready: false, token: "", user: null };
+
+      const requestPath = (event) => {
+        const rawPath = event.detail.path || event.detail.requestConfig?.path || "";
+        try {
+          return new URL(rawPath, window.location.origin).pathname;
+        } catch (_) {
+          return "";
+        }
+      };
+
+      const requiresAuth = (event) => {
+        if (event.detail.elt?.closest?.("[data-require-auth]")) return true;
+        const path = requestPath(event);
+        return path === "/ui" ||
+          path === "/ui/" ||
+          path.startsWith("/ui/workouts") ||
+          path === "/workouts" ||
+          path.startsWith("/workouts/") ||
+          path === "/workout-sessions" ||
+          path.startsWith("/workout-sessions/");
+      };
+
+      const redirectToLogin = () => {
+        if (window.location.pathname === "/ui/login") return;
+        const next = `${window.location.pathname}${window.location.search}`;
+        window.location.assign(`/ui/login?next=${encodeURIComponent(next)}`);
+      };
+
+      document.addEventListener("htmx:confirm", (event) => {
+        if (!requiresAuth(event)) return;
+
+        if (!state.ready) {
+          event.preventDefault();
+          state.initialized.then(() => {
+            if (state.token) {
+              event.detail.issueRequest();
+            } else {
+              redirectToLogin();
+            }
+          });
+          return;
+        }
+
+        if (!state.token) {
+          event.preventDefault();
+          redirectToLogin();
+        }
+      });
+
+      document.addEventListener("htmx:configRequest", (event) => {
+        if (state.token) {
+          event.detail.headers.Authorization = `Bearer ${state.token}`;
+        }
+      });
+
+      return {
+        state,
+        update(user, token) {
+          state.user = user;
+          state.token = token || "";
+          if (!state.ready) {
+            state.ready = true;
+            resolveInitialized();
+          }
+          document.dispatchEvent(new CustomEvent("forge:auth-change", { detail: { user } }));
+        },
+        redirectToLogin,
+      };
+    })();
+  </script>
   <script src="https://unpkg.com/htmx.org@2.0.4" defer></script>
   <style>
     :root {
@@ -101,6 +178,7 @@
     .nav a:hover, .button:hover, button:hover { background: var(--surface-soft); }
     .nav a.active, .button.primary { background: var(--text); color: var(--surface); }
     .theme-toggle { min-width: 68px; }
+    .auth-user { align-self: center; color: var(--muted); font-size: 0.82rem; max-width: 180px; overflow: hidden; padding: 0 8px; text-overflow: ellipsis; white-space: nowrap; }
     main { padding: 26px 0 64px; }
     .hero { display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 18px; align-items: stretch; }
     .panel, .card, .stat, .detail { border: 1px solid var(--line); background: var(--surface); box-shadow: var(--shadow); }
@@ -130,14 +208,28 @@
     .instructions li:before { content: counter(step, decimal-leading-zero); color: var(--accent); font-weight: 800; margin-right: 10px; }
     .empty { border: 1px dashed var(--line); border-radius: 20px; color: var(--muted); padding: 28px; text-align: center; }
     .back { display: inline-flex; margin-bottom: 18px; color: var(--accent); font-weight: 650; }
+    .auth-layout { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(320px, 0.8fr); gap: 18px; align-items: stretch; }
+    .auth-intro { display: flex; flex-direction: column; justify-content: center; min-height: 470px; }
+    .auth-card { display: grid; align-content: center; gap: 22px; }
+    .auth-form { display: grid; gap: 14px; }
+    .auth-form label { display: grid; gap: 7px; color: var(--muted); font-size: 0.84rem; font-weight: 700; }
+    .auth-form input { border-radius: 14px; }
+    .auth-form .button, .auth-google { border-radius: 14px; justify-content: center; width: 100%; }
+    .auth-divider { display: flex; align-items: center; gap: 12px; color: var(--muted); font-size: 0.8rem; }
+    .auth-divider:before, .auth-divider:after { content: ""; height: 1px; background: var(--line); flex: 1; }
+    .auth-google { border-color: var(--line); }
+    .auth-error { border: 1px solid #dc2626; border-radius: 14px; color: #dc2626; margin: 0; padding: 12px 14px; }
+    .auth-loading { min-height: 320px; display: grid; place-items: center; text-align: center; }
+    [hidden] { display: none !important; }
     .htmx-indicator { opacity: 0; transition: opacity 120ms ease; }
     .htmx-request .htmx-indicator, .htmx-request.htmx-indicator { opacity: 1; }
 
     @media (max-width: 820px) {
       .topbar, .toolbar { align-items: flex-start; flex-direction: column; }
-      .hero, .grid, .stats { grid-template-columns: 1fr; }
+      .hero, .grid, .stats, .auth-layout { grid-template-columns: 1fr; }
       .shell { width: min(100% - 22px, 1120px); }
       .panel { border-radius: 24px; }
+      .auth-intro { min-height: auto; }
     }
   </style>
 </head>
@@ -150,8 +242,11 @@
       </a>
       <nav class="nav" aria-label="Primary">
         <a href="/ui/" data-nav-section="home" {{if eq .Active "home"}}class="active"{{end}}>Dashboard</a>
-        <a href="/ui/workouts" data-nav-section="workouts" {{if eq .Active "workouts"}}class="active"{{end}}>Workouts</a>
+        <a href="/ui/workouts" data-require-auth data-nav-section="workouts" {{if eq .Active "workouts"}}class="active"{{end}}>Workouts</a>
         <a href="/ui/exercises" data-nav-section="exercises" {{if eq .Active "exercises"}}class="active"{{end}}>Exercises</a>
+        <span class="auth-user" data-auth-user data-auth-signed-in hidden></span>
+        <a href="/ui/login" data-auth-signed-out hidden>Sign in</a>
+        <button type="button" data-auth-logout data-auth-signed-in hidden>Sign out</button>
         <button class="theme-toggle" type="button" data-theme-toggle aria-label="Switch theme">Theme</button>
       </nav>
     </header>
@@ -161,6 +256,127 @@
 {{define "shell-end"}}
     </main>
   </div>
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.17.0/firebase-app.js";
+    import {
+      getAuth,
+      GoogleAuthProvider,
+      onIdTokenChanged,
+      signInWithEmailAndPassword,
+      signInWithPopup,
+      signOut,
+    } from "https://www.gstatic.com/firebasejs/12.17.0/firebase-auth.js";
+
+    const authError = document.querySelector("[data-auth-error]");
+    const setAuthError = (message) => {
+      if (!authError) return;
+      authError.textContent = message;
+      authError.hidden = !message;
+    };
+
+    const errorMessage = (error) => {
+      switch (error?.code) {
+        case "auth/invalid-credential":
+        case "auth/user-not-found":
+        case "auth/wrong-password":
+          return "Email or password is incorrect.";
+        case "auth/invalid-email":
+          return "Enter a valid email address.";
+        case "auth/popup-closed-by-user":
+          return "Google sign-in was canceled.";
+        case "auth/too-many-requests":
+          return "Too many attempts. Try again later.";
+        default:
+          return "Sign-in failed. Try again.";
+      }
+    };
+
+    const destination = () => {
+      const next = new URLSearchParams(window.location.search).get("next");
+      return next?.startsWith("/") && !next.startsWith("//") ? next : "/ui/";
+    };
+
+    const syncAuthControls = (user) => {
+      document.querySelectorAll("[data-auth-signed-in]").forEach((element) => {
+        element.hidden = !user;
+      });
+      document.querySelectorAll("[data-auth-signed-out]").forEach((element) => {
+        element.hidden = Boolean(user);
+      });
+      document.querySelectorAll("[data-auth-user]").forEach((element) => {
+        element.textContent = user?.displayName || user?.email || "Signed in";
+      });
+    };
+
+    try {
+      const response = await fetch("/ui/auth-config", { headers: { Accept: "application/json" } });
+      if (!response.ok) throw new Error("Firebase web configuration unavailable");
+
+      const authConfig = await response.json();
+      const firebaseApp = initializeApp(authConfig.firebase);
+      const firebaseAuth = getAuth(firebaseApp);
+      const googleProvider = new GoogleAuthProvider();
+
+      onIdTokenChanged(firebaseAuth, async (user) => {
+        try {
+          const token = user ? await user.getIdToken() : "";
+          window.forgeAuth.update(user, token);
+          syncAuthControls(user);
+
+          if (user && window.location.pathname === "/ui/login") {
+            window.location.assign(destination());
+          }
+        } catch (error) {
+          console.error(error);
+          window.forgeAuth.update(null, "");
+          syncAuthControls(null);
+          setAuthError("Unable to verify your sign-in. Try again.");
+        }
+      });
+
+      document.querySelector("[data-auth-login-form]")?.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        setAuthError("");
+        const submit = event.currentTarget.querySelector("[data-auth-email-submit]");
+        submit.disabled = true;
+
+        try {
+          const form = new FormData(event.currentTarget);
+          await signInWithEmailAndPassword(firebaseAuth, String(form.get("email")), String(form.get("password")));
+        } catch (error) {
+          setAuthError(errorMessage(error));
+          submit.disabled = false;
+        }
+      });
+
+      document.querySelector("[data-auth-google]")?.addEventListener("click", async (event) => {
+        setAuthError("");
+        event.currentTarget.disabled = true;
+        try {
+          await signInWithPopup(firebaseAuth, googleProvider);
+        } catch (error) {
+          setAuthError(errorMessage(error));
+          event.currentTarget.disabled = false;
+        }
+      });
+
+      document.querySelector("[data-auth-logout]")?.addEventListener("click", async () => {
+        await signOut(firebaseAuth);
+        window.location.assign("/ui/login");
+      });
+
+      document.addEventListener("htmx:responseError", async (event) => {
+        if (event.detail.xhr.status !== 401) return;
+        await signOut(firebaseAuth);
+        window.forgeAuth.redirectToLogin();
+      });
+    } catch (error) {
+      console.error(error);
+      window.forgeAuth.update(null, "");
+      syncAuthControls(null);
+      setAuthError("Authentication is unavailable. Check server configuration.");
+    }
+  </script>
   <script>
     (() => {
       const button = document.querySelector("[data-theme-toggle]");
@@ -169,11 +385,10 @@
 
       const syncNav = () => {
         const path = window.location.pathname;
-        const section = path.startsWith("/ui/exercises")
-          ? "exercises"
-          : path.startsWith("/ui/workouts")
-            ? "workouts"
-            : "home";
+        let section = "home";
+        if (path.startsWith("/ui/login")) section = "login";
+        if (path.startsWith("/ui/exercises")) section = "exercises";
+        if (path.startsWith("/ui/workouts")) section = "workouts";
 
         navLinks.forEach((link) => {
           link.classList.toggle("active", link.dataset.navSection === section);
@@ -222,4 +437,20 @@
   </script>
 </body>
 </html>
+{{end}}
+
+{{define "auth-loading"}}
+<section
+  class="panel auth-loading"
+  data-require-auth
+  hx-get="{{.AuthPath}}"
+  hx-trigger="load"
+  hx-target="this"
+  hx-swap="outerHTML"
+>
+  <div>
+    <div class="eyebrow">Authenticating</div>
+    <h2>Loading your training data...</h2>
+  </div>
+</section>
 {{end}}

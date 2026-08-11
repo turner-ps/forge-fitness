@@ -1,5 +1,5 @@
 {{define "workouts-page"}}{{template "shell-start" .}}{{template
-"workouts-content" .}}{{template "shell-end" .}}{{end}} {{define
+"auth-loading" .}}{{template "shell-end" .}}{{end}} {{define
 "workouts-content"}}
 <section class="panel">
   <div class="eyebrow">Workouts</div>
@@ -9,7 +9,7 @@
 
 <section class="toolbar">
   <h2>{{len .Workouts}} Workouts</h2>
-  <a class="button" href="/workouts/">JSON route</a>
+  <a class="button" href="/workouts">JSON route</a>
 </section>
 
 {{if .Workouts}}
@@ -29,7 +29,7 @@
 {{else}}
 <div class="empty">No workouts yet.</div>
 {{end}} {{end}} {{define "workout-page"}}{{template "shell-start" .}}{{template
-"workout-content" .}}{{template "shell-end" .}}{{end}} {{define
+"auth-loading" .}}{{template "shell-end" .}}{{end}} {{define
 "workout-content"}}
 <a class="back" href="/ui/workouts">Back to workouts</a>
 <article class="detail">
