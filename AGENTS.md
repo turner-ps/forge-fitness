@@ -95,6 +95,9 @@ Authenticated workout routes:
 - Use nullable pointer fields in Go for nullable DB metrics so JSON emits `null` naturally.
 - Prefer small SQL helpers with local scanner interfaces when sharing scan code between `QueryRowContext` and `QueryContext` rows.
 - Keep HTMX templates simple and server-rendered. Avoid adding frontend build tooling unless requested.
+- Keep HTMX for simple server-rendered browsing, dashboard, auth, and form flows.
+- For complex interactive frontend features like active workout logging, timers, offline drafts, optimistic set editing, progression charts, or rich client state, consider adding React with TanStack tools instead of forcing HTMX.
+- Preserve JSON API + bearer-token auth as shared backend contract for HTMX, future React frontend, and mobile clients.
 - Do not add auth placeholders that pretend to secure data. Until auth exists, state route-scoped limitation clearly.
 
 # Roadmap
