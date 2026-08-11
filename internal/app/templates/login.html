@@ -19,7 +19,7 @@
       <h2>Sign in</h2>
     </div>
 
-    <form class="auth-form" data-auth-login-form>
+    <form class="auth-form" data-auth-email-form>
       <label>
         <span>Email</span>
         <input type="email" name="email" autocomplete="email" required>
@@ -28,7 +28,10 @@
         <span>Password</span>
         <input type="password" name="password" autocomplete="current-password" required>
       </label>
-      <button class="button primary" type="submit" data-auth-email-submit>Sign in</button>
+      <div class="auth-actions">
+        <button class="button primary" type="submit" data-auth-email-submit>Sign in</button>
+        <button class="button" type="button" data-auth-create-account>Create account</button>
+      </div>
     </form>
 
     <div class="auth-divider"><span>or</span></div>
