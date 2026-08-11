@@ -36,7 +36,7 @@ Current backend supports (Update this section as new features are implemented):
 - Workout template exercises with optional planned/default `sets`, `reps`, `weight`, `duration_seconds`.
 - Historical workout sessions for repeated workouts over time.
 - Session exercises and per-set logs with nullable `reps`, `weight`, `duration_seconds`.
-- User-scoped workout/session routes. Auth not implemented yet, so `userID` path param is current ownership boundary.
+- Authenticated workout/session routes derive local user ownership from Firebase identity context.
 
 Current frontend supports (Update this section as new features are implemented):
 
@@ -74,22 +74,21 @@ Exercise routes:
 - `GET /exercises/`
 - `GET /exercises/{id}`
 
-User-scoped workout routes:
+Authenticated workout routes:
 
-- `GET /users/{userID}/workouts/`
-- `POST /users/{userID}/workouts/`
-- `GET /users/{userID}/workouts/{id}`
-- `GET /users/{userID}/workouts/{id}/exercises`
-- `POST /users/{userID}/workouts/{id}/exercises`
-- `POST /users/{userID}/workouts/{id}/exercises/bulk`
-- `GET /users/{userID}/workouts/{id}/sessions`
-- `POST /users/{userID}/workouts/{id}/sessions`
-- `GET /users/{userID}/workout-sessions`
-- `GET /users/{userID}/workout-sessions/{sessionID}`
+- `GET /workouts`
+- `POST /workouts`
+- `GET /workouts/{id}`
+- `POST /workouts/{id}/exercises`
+- `GET /workouts/{id}/sessions`
+- `POST /workouts/{id}/sessions`
+- `GET /workout-sessions`
+- `GET /workout-sessions/{sessionID}`
 
 # Development style
 
 - Keep store structs close to table rows. Use explicit “with children” response shapes when needed.
+- Prefer splitting handler files by resource or concern as they approach roughly 500 lines; treat this as maintainability guidance, not a hard limit.
 - Keep user ownership checks in store queries where practical, not only handlers.
 - Use nullable pointer fields in Go for nullable DB metrics so JSON emits `null` naturally.
 - Prefer small SQL helpers with local scanner interfaces when sharing scan code between `QueryRowContext` and `QueryContext` rows.
