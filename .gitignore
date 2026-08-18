@@ -1,5 +1,5 @@
-/database
-./database/
+/.database
+./.database/
 ./docs/notes.txt
 /docs/notes.txt
 exercise_data/
