@@ -9,21 +9,22 @@ import (
 
 	"github.com/turner-ps/forge-fitness/internal/auth"
 	"github.com/turner-ps/forge-fitness/internal/store"
+	"github.com/turner-ps/forge-fitness/internal/testutil"
 )
 
 func TestRequireAuthRejectsMissingToken(t *testing.T) {
-	_, handler := newTestApp(t, &fakeVerifier{identities: map[string]*auth.Identity{}})
+	_, handler := newTestApp(t, &testutil.FakeVerifier{Identities: map[string]*auth.Identity{}})
 
-	rec := doRequest(t, handler, http.MethodGet, "/me", "", "")
+	rec := testutil.DoRequest(t, handler, http.MethodGet, "/me", "", "")
 	if rec.Code != http.StatusUnauthorized {
 		t.Fatalf("missing token status = %d, want %d", rec.Code, http.StatusUnauthorized)
 	}
 }
 
 func TestRequireAuthRejectsInvalidToken(t *testing.T) {
-	_, handler := newTestApp(t, &fakeVerifier{identities: map[string]*auth.Identity{}})
+	_, handler := newTestApp(t, &testutil.FakeVerifier{Identities: map[string]*auth.Identity{}})
 
-	rec := doRequest(t, handler, http.MethodGet, "/me", "not-a-real-token", "")
+	rec := testutil.DoRequest(t, handler, http.MethodGet, "/me", "not-a-real-token", "")
 	if rec.Code != http.StatusUnauthorized {
 		t.Fatalf("invalid token status = %d, want %d", rec.Code, http.StatusUnauthorized)
 	}
@@ -31,9 +32,9 @@ func TestRequireAuthRejectsInvalidToken(t *testing.T) {
 
 func TestRequireAuthRejectsNonFirebaseIdentity(t *testing.T) {
 	identity := &auth.Identity{Provider: "other-provider", Subject: "uid-1", Email: "a@example.com"}
-	_, handler := newTestApp(t, &fakeVerifier{identities: map[string]*auth.Identity{"token": identity}})
+	_, handler := newTestApp(t, &testutil.FakeVerifier{Identities: map[string]*auth.Identity{"token": identity}})
 
-	rec := doRequest(t, handler, http.MethodGet, "/me", "token", "")
+	rec := testutil.DoRequest(t, handler, http.MethodGet, "/me", "token", "")
 	if rec.Code != http.StatusUnauthorized {
 		t.Fatalf("non-firebase identity status = %d, want %d", rec.Code, http.StatusUnauthorized)
 	}
@@ -45,8 +46,8 @@ func TestRequireAuthRejectsMissingSubjectOrEmail(t *testing.T) {
 		"no email":   {Provider: auth.ProviderFirebase, Subject: "uid-1", Email: ""},
 	} {
 		t.Run(name, func(t *testing.T) {
-			_, handler := newTestApp(t, &fakeVerifier{identities: map[string]*auth.Identity{"token": identity}})
-			rec := doRequest(t, handler, http.MethodGet, "/me", "token", "")
+			_, handler := newTestApp(t, &testutil.FakeVerifier{Identities: map[string]*auth.Identity{"token": identity}})
+			rec := testutil.DoRequest(t, handler, http.MethodGet, "/me", "token", "")
 			if rec.Code != http.StatusUnauthorized {
 				t.Fatalf("status = %d, want %d", rec.Code, http.StatusUnauthorized)
 			}
@@ -55,9 +56,9 @@ func TestRequireAuthRejectsMissingSubjectOrEmail(t *testing.T) {
 }
 
 func TestRequireAuthFailsWhenVerifierErrors(t *testing.T) {
-	_, handler := newTestApp(t, &fakeVerifier{reject: errors.New("verifier down")})
+	_, handler := newTestApp(t, &testutil.FakeVerifier{Reject: errors.New("verifier down")})
 
-	rec := doRequest(t, handler, http.MethodGet, "/me", "token", "")
+	rec := testutil.DoRequest(t, handler, http.MethodGet, "/me", "token", "")
 	if rec.Code != http.StatusUnauthorized {
 		t.Fatalf("verifier error status = %d, want %d", rec.Code, http.StatusUnauthorized)
 	}
@@ -66,18 +67,18 @@ func TestRequireAuthFailsWhenVerifierErrors(t *testing.T) {
 func TestRequireAuthFailsWhenNoVerifierConfigured(t *testing.T) {
 	_, handler := newTestApp(t, nil)
 
-	rec := doRequest(t, handler, http.MethodGet, "/me", "token", "")
+	rec := testutil.DoRequest(t, handler, http.MethodGet, "/me", "token", "")
 	if rec.Code != http.StatusUnauthorized {
 		t.Fatalf("nil verifier status = %d, want %d", rec.Code, http.StatusUnauthorized)
 	}
 }
 
 func TestAuthenticatedMeReturnsCurrentUser(t *testing.T) {
-	application, handler := newTestApp(t, &fakeVerifier{identities: map[string]*auth.Identity{
-		"token": firebaseIdentity("uid-1", "a@example.com"),
+	application, handler := newTestApp(t, &testutil.FakeVerifier{Identities: map[string]*auth.Identity{
+		"token": testutil.FirebaseIdentity("uid-1", "a@example.com"),
 	}})
 
-	rec := doRequest(t, handler, http.MethodGet, "/me", "token", "")
+	rec := testutil.DoRequest(t, handler, http.MethodGet, "/me", "token", "")
 	if rec.Code != http.StatusOK {
 		t.Fatalf("status = %d, want %d", rec.Code, http.StatusOK)
 	}
@@ -108,12 +109,12 @@ func TestAuthenticatedMeReturnsCurrentUser(t *testing.T) {
 }
 
 func TestAuthAutoProvisionCreatesLocalUser(t *testing.T) {
-	application, handler := newTestApp(t, &fakeVerifier{identities: map[string]*auth.Identity{
-		"token": firebaseIdentity("uid-bravo", "bravo@example.com"),
+	application, handler := newTestApp(t, &testutil.FakeVerifier{Identities: map[string]*auth.Identity{
+		"token": testutil.FirebaseIdentity("uid-bravo", "bravo@example.com"),
 	}})
 
 	// No user exists yet; a first authenticated call should create the row.
-	rec := doRequest(t, handler, http.MethodGet, "/me", "token", "")
+	rec := testutil.DoRequest(t, handler, http.MethodGet, "/me", "token", "")
 	if rec.Code != http.StatusOK {
 		t.Fatalf("status = %d, want %d", rec.Code, http.StatusOK)
 	}
@@ -127,7 +128,7 @@ func TestAuthAutoProvisionCreatesLocalUser(t *testing.T) {
 	}
 
 	// Second authenticated call should not create a duplicate.
-	rec = doRequest(t, handler, http.MethodGet, "/me", "token", "")
+	rec = testutil.DoRequest(t, handler, http.MethodGet, "/me", "token", "")
 	if rec.Code != http.StatusOK {
 		t.Fatalf("second status = %d, want %d", rec.Code, http.StatusOK)
 	}
@@ -141,13 +142,13 @@ func TestAuthAutoProvisionCreatesLocalUser(t *testing.T) {
 }
 
 func TestUserCannotAccessAnotherUsersWorkout(t *testing.T) {
-	_, handler := newTestApp(t, &fakeVerifier{identities: map[string]*auth.Identity{
-		"token-a": firebaseIdentity("uid-a", "a@example.com"),
-		"token-b": firebaseIdentity("uid-b", "b@example.com"),
+	_, handler := newTestApp(t, &testutil.FakeVerifier{Identities: map[string]*auth.Identity{
+		"token-a": testutil.FirebaseIdentity("uid-a", "a@example.com"),
+		"token-b": testutil.FirebaseIdentity("uid-b", "b@example.com"),
 	}})
 
 	// User A creates a workout.
-	createRec := doRequest(t, handler, http.MethodPost, "/workouts", "token-a", `{"name":"A Workout"}`)
+	createRec := testutil.DoRequest(t, handler, http.MethodPost, "/workouts", "token-a", `{"name":"A Workout"}`)
 	if createRec.Code != http.StatusCreated {
 		t.Fatalf("create workout status = %d, want %d: %s", createRec.Code, http.StatusCreated, createRec.Body.String())
 	}
@@ -161,23 +162,23 @@ func TestUserCannotAccessAnotherUsersWorkout(t *testing.T) {
 	}
 
 	// User B attempts to fetch A's workout.
-	path := "/workouts/" + itoa(created.Workout.ID)
-	rec := doRequest(t, handler, http.MethodGet, path, "token-b", "")
+	path := "/workouts/" + testutil.Itoa(created.Workout.ID)
+	rec := testutil.DoRequest(t, handler, http.MethodGet, path, "token-b", "")
 	if rec.Code != http.StatusNotFound {
 		t.Fatalf("cross-user workout status = %d, want %d", rec.Code, http.StatusNotFound)
 	}
 
 	// User A can fetch their own workout.
-	rec = doRequest(t, handler, http.MethodGet, path, "token-a", "")
+	rec = testutil.DoRequest(t, handler, http.MethodGet, path, "token-a", "")
 	if rec.Code != http.StatusOK {
 		t.Fatalf("owner workout status = %d, want %d", rec.Code, http.StatusOK)
 	}
 }
 
 func TestListWorkoutsIsUserScoped(t *testing.T) {
-	_, handler := newTestApp(t, &fakeVerifier{identities: map[string]*auth.Identity{
-		"token-a": firebaseIdentity("uid-a", "a@example.com"),
-		"token-b": firebaseIdentity("uid-b", "b@example.com"),
+	_, handler := newTestApp(t, &testutil.FakeVerifier{Identities: map[string]*auth.Identity{
+		"token-a": testutil.FirebaseIdentity("uid-a", "a@example.com"),
+		"token-b": testutil.FirebaseIdentity("uid-b", "b@example.com"),
 	}})
 
 	for _, item := range []struct {
@@ -187,13 +188,13 @@ func TestListWorkoutsIsUserScoped(t *testing.T) {
 		{"token-a", "Alpha"},
 		{"token-b", "Beta"},
 	} {
-		rec := doRequest(t, handler, http.MethodPost, "/workouts", item.token, `{"name":"`+item.name+`"}`)
+		rec := testutil.DoRequest(t, handler, http.MethodPost, "/workouts", item.token, `{"name":"`+item.name+`"}`)
 		if rec.Code != http.StatusCreated {
 			t.Fatalf("create %s: status = %d", item.name, rec.Code)
 		}
 	}
 
-	rec := doRequest(t, handler, http.MethodGet, "/workouts", "token-a", "")
+	rec := testutil.DoRequest(t, handler, http.MethodGet, "/workouts", "token-a", "")
 	if rec.Code != http.StatusOK {
 		t.Fatalf("list status = %d", rec.Code)
 	}
@@ -207,7 +208,7 @@ func TestListWorkoutsIsUserScoped(t *testing.T) {
 		t.Fatalf("user A workouts = %+v, want only Alpha", list.Workouts)
 	}
 
-	rec = doRequest(t, handler, http.MethodGet, "/workouts", "token-b", "")
+	rec = testutil.DoRequest(t, handler, http.MethodGet, "/workouts", "token-b", "")
 	if rec.Code != http.StatusOK {
 		t.Fatalf("list B status = %d", rec.Code)
 	}
@@ -220,9 +221,9 @@ func TestListWorkoutsIsUserScoped(t *testing.T) {
 }
 
 func TestUserCannotAccessAnotherUsersSession(t *testing.T) {
-	application, handler := newTestApp(t, &fakeVerifier{identities: map[string]*auth.Identity{
-		"token-a": firebaseIdentity("uid-a", "a@example.com"),
-		"token-b": firebaseIdentity("uid-b", "b@example.com"),
+	application, handler := newTestApp(t, &testutil.FakeVerifier{Identities: map[string]*auth.Identity{
+		"token-a": testutil.FirebaseIdentity("uid-a", "a@example.com"),
+		"token-b": testutil.FirebaseIdentity("uid-b", "b@example.com"),
 	}})
 
 	userA, err := application.Store.UpsertUserFromFirebase(t.Context(), store.UpsertUserFromFirebaseInput{
@@ -246,13 +247,13 @@ func TestUserCannotAccessAnotherUsersSession(t *testing.T) {
 		t.Fatalf("seed session: %v", err)
 	}
 
-	path := "/workout-sessions/" + itoa(session.ID)
-	rec := doRequest(t, handler, http.MethodGet, path, "token-b", "")
+	path := "/workout-sessions/" + testutil.Itoa(session.ID)
+	rec := testutil.DoRequest(t, handler, http.MethodGet, path, "token-b", "")
 	if rec.Code != http.StatusNotFound {
 		t.Fatalf("cross-user session status = %d, want %d", rec.Code, http.StatusNotFound)
 	}
 
-	rec = doRequest(t, handler, http.MethodGet, path, "token-a", "")
+	rec = testutil.DoRequest(t, handler, http.MethodGet, path, "token-a", "")
 	if rec.Code != http.StatusOK {
 		t.Fatalf("owner session status = %d, want %d", rec.Code, http.StatusOK)
 	}
