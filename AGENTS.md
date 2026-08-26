@@ -87,6 +87,30 @@ Authenticated workout routes:
 - `GET /workout-sessions`
 - `GET /workout-sessions/{sessionID}`
 
+Auth: authenticated routes require `Authorization: Bearer <firebase ID token>`. Obtain the ID token from the Firebase Web SDK (`user.getIdToken()`) or the Firebase CLI. Example usage with `$ID_TOKEN`:
+
+```bash
+# Your own profile / auto-provisions the local user on first call.
+curl -H "Authorization: Bearer $ID_TOKEN" http://localhost:8080/me
+
+# List your workouts.
+curl -H "Authorization: Bearer $ID_TOKEN" http://localhost:8080/workouts
+
+# Create a workout.
+curl -H "Authorization: Bearer $ID_TOKEN" -H "Content-Type: application/json" \
+  -d '{"name":"Push Day"}' http://localhost:8080/workouts
+
+# Attach one or more exercises to a workout.
+curl -H "Authorization: Bearer $ID_TOKEN" -H "Content-Type: application/json" \
+  -d '{"exercises":[{"exercise_id":4,"sets":3,"reps":8,"weight":50}]}' \
+  http://localhost:8080/workouts/1/exercises
+
+# List your sessions.
+curl -H "Authorization: Bearer $ID_TOKEN" http://localhost:8080/workout-sessions
+```
+
+Error handling: `401` for missing/invalid token; `404` for user-owned resources you don't own (avoids leaking existence); `400` for malformed requests.
+
 # Development style
 
 - Keep store structs close to table rows. Use explicit “with children” response shapes when needed.
