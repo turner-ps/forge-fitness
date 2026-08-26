@@ -15,8 +15,13 @@ func registerWorkoutsRoutes(r chi.Router, app *app.Application) {
 
 		r.Get("/workouts", app.GetWorkouts)
 		r.Post("/workouts", app.CreateWorkout)
+
 		r.Get("/workouts/{id}", app.GetWorkoutByID)
+		r.Patch("/workouts/{id}", app.UpdateWorkout)
+		r.Delete("/workouts/{id}", app.DeleteWorkout)
+
 		r.Post("/workouts/{id}/exercises", app.AddExerciseToWorkout)
+
 		r.Get("/workouts/{id}/sessions", app.GetWorkoutSessions)
 		r.Post("/workouts/{id}/sessions", app.CreateWorkoutSession)
 	})

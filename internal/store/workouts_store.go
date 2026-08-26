@@ -20,6 +20,12 @@ type CreateWorkoutInput struct {
 	Name   string `json:"name"`
 }
 
+type UpdateWorkoutInput struct {
+	UserID int64  `json:"user_id"`
+	ID     int64  `json:"id"`
+	Name   string `json:"name"`
+}
+
 type WorkoutExercise struct {
 	ID              int64     `json:"id"`
 	WorkoutID       int64     `json:"workout_id"`
@@ -154,6 +160,42 @@ RETURNING id, user_id, name, created_at, updated_at`
 	}
 
 	return workout, nil
+}
+
+func (s *Store) UpdateWorkout(ctx context.Context, input UpdateWorkoutInput) (*Workout, error) {
+	const query = `
+UPDATE workout
+SET name = $3, updated_at = NOW()
+WHERE user_id = $1 AND id = $2
+RETURNING id, user_id, name, created_at, updated_at`
+
+	workout, err := scanWorkout(s.DB.QueryRowContext(ctx, query, input.UserID, input.ID, input.Name))
+	if err != nil {
+		return nil, fmt.Errorf("update workout id %d for user id %d: %w", input.ID, input.UserID, err)
+	}
+
+	return workout, nil
+}
+
+func (s *Store) DeleteWorkout(ctx context.Context, userID int64, workoutID int64) error {
+	const query = `
+DELETE FROM workout
+WHERE user_id = $1 AND id = $2`
+
+	result, err := s.DB.ExecContext(ctx, query, userID, workoutID)
+	if err != nil {
+		return fmt.Errorf("delete workout id %d for user id %d: %w", workoutID, userID, err)
+	}
+
+	rows, err := result.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("delete workout rows affected id %d for user id %d: %w", workoutID, userID, err)
+	}
+	if rows == 0 {
+		return sql.ErrNoRows
+	}
+
+	return nil
 }
 
 func (s *Store) AddExerciseToWorkout(ctx context.Context, input AddExerciseToWorkoutInput) (*WorkoutExercise, error) {

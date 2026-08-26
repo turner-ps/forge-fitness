@@ -70,6 +70,67 @@ func (a *Application) CreateWorkout(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+type updateWorkoutRequest struct {
+	Name string `json:"name"`
+}
+
+func (a *Application) UpdateWorkout(w http.ResponseWriter, r *http.Request) {
+	userID, workoutID, ok := a.userWorkoutParams(w, r)
+	if !ok {
+		return
+	}
+
+	var request updateWorkoutRequest
+	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
+		a.badRequest(w, "invalid workout request")
+		return
+	}
+
+	name := strings.TrimSpace(request.Name)
+	if name == "" {
+		a.badRequest(w, "workout name is required")
+		return
+	}
+
+	workout, err := a.Store.UpdateWorkout(r.Context(), store.UpdateWorkoutInput{
+		UserID: userID,
+		ID:     workoutID,
+		Name:   name,
+	})
+	if errors.Is(err, sql.ErrNoRows) {
+		a.notFound(w, "workout not found")
+		return
+	}
+	if err != nil {
+		a.serverError(w, err)
+		return
+	}
+
+	err = httpjson.WriteJSON(w, http.StatusOK, httpjson.Envelope{"workout": workout})
+	if err != nil {
+		a.Logger.Printf("write workout response: %v", err)
+	}
+}
+
+func (a *Application) DeleteWorkout(w http.ResponseWriter, r *http.Request) {
+	userID, workoutID, ok := a.userWorkoutParams(w, r)
+	if !ok {
+		return
+	}
+
+	err := a.Store.DeleteWorkout(r.Context(), userID, workoutID)
+	if errors.Is(err, sql.ErrNoRows) {
+		a.notFound(w, "workout not found")
+		return
+	}
+	if err != nil {
+		a.serverError(w, err)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
+}
+
 func (a *Application) GetWorkoutByID(w http.ResponseWriter, r *http.Request) {
 	userID, ok := a.authenticatedUserID(w, r)
 	if !ok {

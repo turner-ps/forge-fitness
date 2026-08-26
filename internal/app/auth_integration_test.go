@@ -37,6 +37,8 @@ func testRouter(application *Application) http.Handler {
 		r.Get("/workouts", application.GetWorkouts)
 		r.Post("/workouts", application.CreateWorkout)
 		r.Get("/workouts/{id}", application.GetWorkoutByID)
+		r.Patch("/workouts/{id}", application.UpdateWorkout)
+		r.Delete("/workouts/{id}", application.DeleteWorkout)
 		r.Get("/workout-sessions", application.GetUserWorkoutSessions)
 		r.Get("/workout-sessions/{sessionID}", application.GetWorkoutSessionByID)
 	})
