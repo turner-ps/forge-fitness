@@ -59,6 +59,9 @@ Config comes from env vars (`.env` optional locally; see `.env.example`). Never 
 - Add or update tests with every behavior change. Run `go test -race ./...` before finishing.
 
 ## Git
+- Agents do not handle git operations: no commits, pushes, branches, merges, or PRs. The user does all of that.
+- Exception: when the user explicitly asks for help resolving merge conflicts or other git issues, the agent may run the git commands needed for that task. Keep to the scope of the request, and do not push or rewrite shared history unless asked.
+- If the user asks for a commit message, reply with a 3-5 line summary of the changes made in the current session. Do not run any git commands to apply it.
 - Branch from `develop`; PRs target `main` through `develop`.
 - Commit message format: `(type): description` (types: feat, fix, task, docs, test, refactor), optional bullet body.
 - Do not commit `.env`, `database/`, or secrets.
